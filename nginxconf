@@ -3,9 +3,9 @@
 domain=$1
 
 # Quitting the script if domain name not entered
-if [ -z $domain ] then
+if [ -z $domain ]; then
     echo "The scripts need a domain as first parameter to function"
-    exit 1
+    kill -INT $$
 fi
 
 # Running updates/upgrade and installing nginx
@@ -21,7 +21,6 @@ SERVER_IP=$(curl -4 icanhazip.com)
 
 # Starting and enabling nginx (enabling it so that it will restart itself when the host reboots)
 sudo systemctl start nginx
-sudo systemctl enable nginx
 
 # Nginx configuration
 # https://www.digitalocean.com/community/tutorials/how-to-install-nginx-on-ubuntu-20-04
@@ -53,12 +52,13 @@ HEREDOC
 # Creating symlink between sites-available and sites-enabled
 sudo ln -s /etc/nginx/sites-available/$domain /etc/nginx/sites-enabled/$domain
 
-# Uncommenting line 24 in nginx.conf to avoid hash bucket memory issues
+# Uncommeting line 24 in nginx.conf to avoid hash bucket memory issues
 sudo chown $USER:$USER /etc/nginx/nginx.conf
-sed -i '24s/#//' /etc/nginx/nginx.conf
-
-# If tests pass echo out success message with relevant info
-sudo nginx -t && echo "Nginx successfully configured!" && echo "IP: ${SERVER_IP}" && echo "Domain: ${domain}"
+sudo sed -i '24s/#//' /etc/nginx/nginx.conf
 
 # Reload service 
 sudo systemctl restart nginx
+sudo systemctl enable nginx
+
+# If tests pass echo out success message with relevant info
+sudo nginx -t && echo "Nginx successfully configured!" && echo "IP: ${SERVER_IP}" && echo "Domain: ${domain}"
