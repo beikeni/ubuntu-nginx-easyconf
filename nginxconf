@@ -1,0 +1,64 @@
+#! /bin/bash
+
+domain=$1
+
+# Quitting the script if domain name not entered
+if [ -z $domain ] then
+    echo "The scripts need a domain as first parameter to function"
+    exit 1
+fi
+
+# Running updates/upgrade and installing nginx
+sudo apt update -y
+sudo apt upgrade -y
+sudo apt install nginx -y
+
+# Creating firewall rule for nginx (HTTP)
+sudo ufw allow 'Nginx HTTP'
+
+# Saving server ip in variable for later use
+SERVER_IP=$(curl -4 icanhazip.com)
+
+# Starting and enabling nginx (enabling it so that it will restart itself when the host reboots)
+sudo systemctl start nginx
+sudo systemctl enable nginx
+
+# Nginx configuration
+# https://www.digitalocean.com/community/tutorials/how-to-install-nginx-on-ubuntu-20-04
+sudo mkdir -p /var/www/$domain/html
+sudo chown -R $USER:$USER /var/www/$domain/html
+sudo chmod -R 755 /var/www/$domain
+sudo touch /var/www/$domain/html/index.html
+sudo echo "<html><body>Configuration Succeded</body></html>" > /var/www/$domain/html/index.html
+sudo touch /etc/nginx/sites-available/$domain
+sudo chown $USER:$USER /etc/nginx/sites-available/$domain
+
+# Creating nginx sites-available conf file
+sudo cat <<HEREDOC > /etc/nginx/sites-available/$domain
+server {
+    listen 80;
+    listen [::]:80;
+
+    root /var/www/$domain/html;
+    index index.html index.htm index.nginx-debian.html;
+
+    server_name $domain www.$domain;
+
+    location / {
+            try_files \$uri \$uri/ =404;
+    }
+}
+HEREDOC
+
+# Creating symlink between sites-available and sites-enabled
+sudo ln -s /etc/nginx/sites-available/$domain /etc/nginx/sites-enabled/$domain
+
+# Uncommeting line 24 in nginx.conf to avoid hash bucket memory issues
+sudo chown $USER:$USER /etc/nginx/nginx.conf
+sed -i '24s/#//' /etc/nginx/nginx.conf
+
+# If tests pass echo out success message with relevant info
+sudo nginx -t && echo "Nginx successfully configured!" && echo "IP: ${SERVER_IP}" && echo "Domain: ${domain}"
+
+# Reload service 
+sudo systemctl restart nginx
