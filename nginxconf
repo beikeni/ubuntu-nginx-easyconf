@@ -53,7 +53,7 @@ HEREDOC
 # Creating symlink between sites-available and sites-enabled
 sudo ln -s /etc/nginx/sites-available/$domain /etc/nginx/sites-enabled/$domain
 
-# Uncommeting line 24 in nginx.conf to avoid hash bucket memory issues
+# Uncommenting line 24 in nginx.conf to avoid hash bucket memory issues
 sudo chown $USER:$USER /etc/nginx/nginx.conf
 sed -i '24s/#//' /etc/nginx/nginx.conf
 
